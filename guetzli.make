@@ -8,6 +8,10 @@ ifndef verbose
   SILENT = @
 endif
 
+ifndef DEFINES
+  DEFINES = -DNO_BUTTERAUGLI
+endif
+
 .PHONY: clean prebuild prelink
 
 ifeq ($(config),release)
