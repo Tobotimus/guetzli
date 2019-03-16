@@ -796,7 +796,8 @@ bool Processor::ProcessJpegData(const Params& params, const JPEGData& jpg_in,
   comparator_ = comparator;
   final_output_ = out;
   stats_ = stats;
-
+  
+#ifndef NO_BUTTERAUGLI
   if (params.butteraugli_target > 2.0f) {
     fprintf(stderr,
             "Guetzli should be called with quality >= 84, otherwise the\n"
@@ -804,6 +805,7 @@ bool Processor::ProcessJpegData(const Params& params, const JPEGData& jpg_in,
             "proceed anyway, please edit the source code.\n");
     return false;
   }
+#endif /* NO_BUTTERAUGLI */
   if (jpg_in.components.size() != 3 || !HasYCbCrColorSpace(jpg_in)) {
     fprintf(stderr, "Only YUV color space input jpeg is supported\n");
     return false;
@@ -913,11 +915,13 @@ bool Process(const Params& params, ProcessStats* stats,
     stats = &dummy_stats;
   }
   std::unique_ptr<ButteraugliComparator> comparator;
+#ifndef NO_BUTTERAUGLI
   if (jpg.width >= 32 && jpg.height >= 32) {
     comparator.reset(
         new ButteraugliComparator(jpg.width, jpg.height, &rgb,
                                   params.butteraugli_target, stats));
   }
+#endif /* NO_BUTTERAUGLI */
   bool ok = ProcessJpegData(params, jpg, comparator.get(), &out, stats);
   *jpg_out = out.jpeg_data;
   return ok;
@@ -937,11 +941,13 @@ bool Process(const Params& params, ProcessStats* stats,
     stats = &dummy_stats;
   }
   std::unique_ptr<ButteraugliComparator> comparator;
+#ifndef NO_BUTTERAUGLI
   if (jpg.width >= 32 && jpg.height >= 32) {
     comparator.reset(
         new ButteraugliComparator(jpg.width, jpg.height, &rgb,
                                   params.butteraugli_target, stats));
   }
+#endif /* NO_BUTTERAUGLI */
   bool ok = ProcessJpegData(params, jpg, comparator.get(), &out, stats);
   *jpg_out = out.jpeg_data;
   return ok;

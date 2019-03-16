@@ -27,7 +27,9 @@
 namespace guetzli {
 
 struct Params {
+#ifndef NO_BUTTERAUGLI
   float butteraugli_target = 1.0;
+#endif /* NO_BUTTERAUGLI */
   bool clear_metadata = true;
   bool try_420 = false;
   bool force_420 = false;

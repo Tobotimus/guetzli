@@ -271,8 +271,10 @@ int main(int argc, char** argv) {
   std::string out_data;
 
   guetzli::Params params;
+#ifndef NO_BUTTERAUGLI
   params.butteraugli_target = static_cast<float>(
       guetzli::ButteraugliScoreForQuality(quality));
+#endif /* NO_BUTTERAUGLI */
 
   guetzli::ProcessStats stats;
 
