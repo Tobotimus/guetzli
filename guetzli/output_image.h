@@ -72,8 +72,6 @@ class OutputImageComponent {
                              int factor_x, int factor_y,
                              const int* quant);
 
-  void ApplyGlobalQuantization(const int q[kDCTBlockSize]);
-
  private:
   void UpdatePixelsForBlock(int block_x, int block_y,
                             const uint8_t idct[kDCTBlockSize]);
@@ -87,7 +85,7 @@ class OutputImageComponent {
   int num_blocks_;
   std::vector<coeff_t> coeffs_;
   std::vector<uint16_t> pixels_;
-  // Same as last argument of ApplyGlobalQuantization() (default is all 1s).
+  // default is all 1s.
   int quant_[kDCTBlockSize];
 };
 
@@ -103,35 +101,6 @@ class OutputImage {
 
   // Requires that jpg is in YUV444 format.
   void CopyFromJpegData(const JPEGData& jpg);
-
-  void ApplyGlobalQuantization(const int q[3][kDCTBlockSize]);
-
-  // If sharpen or blur are enabled, preprocesses image before downsampling U or
-  // V to improve butteraugli score and/or reduce file size.
-  // u_sharpen: sharpen the u channel in red areas to improve score (not as
-  // effective as v_sharpen, blue is not so important)
-  // u_blur: blur the u channel in some areas to reduce file size
-  // v_sharpen: sharpen the v channel in red areas to improve score
-  // v_blur: blur the v channel in some areas to reduce file size
-  struct DownsampleConfig {
-    // Default is YUV420.
-    DownsampleConfig() : u_factor_x(2), u_factor_y(2),
-                         v_factor_x(2), v_factor_y(2),
-                         u_sharpen(true), u_blur(true),
-                         v_sharpen(true), v_blur(true),
-                         use_silver_screen(false) {}
-    int u_factor_x;
-    int u_factor_y;
-    int v_factor_x;
-    int v_factor_y;
-    bool u_sharpen;
-    bool u_blur;
-    bool v_sharpen;
-    bool v_blur;
-    bool use_silver_screen;
-  };
-
-  void Downsample(const DownsampleConfig& cfg);
 
   void SaveToJpegData(JPEGData* jpg) const;
 

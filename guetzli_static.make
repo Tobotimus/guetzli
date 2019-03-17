@@ -8,10 +8,6 @@ ifndef verbose
   SILENT = @
 endif
 
-ifndef DEFINES
-  DEFINES = -DNO_BUTTERAUGLI
-endif
-
 .PHONY: clean prebuild prelink
 
 ifeq ($(config),release)
@@ -20,7 +16,7 @@ ifeq ($(config),release)
   TARGET = $(TARGETDIR)/libguetzli_static.a
   OBJDIR = obj/Release/guetzli_static
   DEFINES +=
-  INCLUDES += -I. -Ithird_party/butteraugli
+  INCLUDES += -I.
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O3 -g `pkg-config --static --cflags libpng || libpng-config --static --cflags`
@@ -47,7 +43,7 @@ ifeq ($(config),debug)
   TARGET = $(TARGETDIR)/libguetzli_static.a
   OBJDIR = obj/Debug/guetzli_static
   DEFINES +=
-  INCLUDES += -I. -Ithird_party/butteraugli
+  INCLUDES += -I.
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g `pkg-config --static --cflags libpng || libpng-config --static --cflags`
@@ -69,7 +65,6 @@ all: $(TARGETDIR) $(OBJDIR) prebuild prelink $(TARGET)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/butteraugli_comparator.o \
 	$(OBJDIR)/dct_double.o \
 	$(OBJDIR)/debug_print.o \
 	$(OBJDIR)/entropy_encode.o \
@@ -85,10 +80,7 @@ OBJECTS := \
 	$(OBJDIR)/output_image.o \
 	$(OBJDIR)/preprocess_downsample.o \
 	$(OBJDIR)/processor.o \
-	$(OBJDIR)/quality.o \
 	$(OBJDIR)/quantize.o \
-	$(OBJDIR)/score.o \
-	$(OBJDIR)/butteraugli.o \
 
 RESOURCES := \
 
@@ -146,9 +138,6 @@ $(GCH): $(PCH)
 	$(SILENT) $(CXX) -x c++-header $(ALL_CXXFLAGS) -o "$@" -MF "$(@:%.gch=%.d)" -c "$<"
 endif
 
-$(OBJDIR)/butteraugli_comparator.o: guetzli/butteraugli_comparator.cc
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/dct_double.o: guetzli/dct_double.cc
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
@@ -194,16 +183,7 @@ $(OBJDIR)/preprocess_downsample.o: guetzli/preprocess_downsample.cc
 $(OBJDIR)/processor.o: guetzli/processor.cc
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/quality.o: guetzli/quality.cc
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/quantize.o: guetzli/quantize.cc
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/score.o: guetzli/score.cc
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/butteraugli.o: third_party/butteraugli/butteraugli/butteraugli.cc
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

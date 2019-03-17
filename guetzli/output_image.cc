@@ -229,19 +229,6 @@ void OutputImageComponent::CopyFromJpegComponent(const JPEGComponent& comp,
   memcpy(quant_, quant, sizeof(quant_));
 }
 
-void OutputImageComponent::ApplyGlobalQuantization(const int q[kDCTBlockSize]) {
-  for (int block_y = 0; block_y < height_in_blocks_; ++block_y) {
-    for (int block_x = 0; block_x < width_in_blocks_; ++block_x) {
-      coeff_t block[kDCTBlockSize];
-      GetCoeffBlock(block_x, block_y, block);
-      if (QuantizeBlock(block, q)) {
-        SetCoeffBlock(block_x, block_y, block);
-      }
-    }
-  }
-  memcpy(quant_, q, sizeof(quant_));
-}
-
 OutputImage::OutputImage(int w, int h)
     : width_(w),
       height_(h),
@@ -300,50 +287,6 @@ void SetDownsampledCoefficients(const std::vector<float>& pixels,
 }
 
 }  // namespace
-
-void OutputImage::Downsample(const DownsampleConfig& cfg) {
-  if (components_[1].IsAllZero() && components_[2].IsAllZero()) {
-    // If the image is already grayscale, nothing to do.
-    return;
-  }
-  if (cfg.use_silver_screen &&
-      cfg.u_factor_x == 2 && cfg.u_factor_y == 2 &&
-      cfg.v_factor_x == 2 && cfg.v_factor_y == 2) {
-    std::vector<uint8_t> rgb = ToSRGB();
-    std::vector<std::vector<float> > yuv = RGBToYUV420(rgb, width_, height_);
-    SetDownsampledCoefficients(yuv[0], 1, 1, &components_[0]);
-    SetDownsampledCoefficients(yuv[1], 2, 2, &components_[1]);
-    SetDownsampledCoefficients(yuv[2], 2, 2, &components_[2]);
-    return;
-  }
-  // Get the floating-point precision YUV array represented by the set of
-  // DCT coefficients.
-  std::vector<std::vector<float> > yuv(3, std::vector<float>(width_ * height_));
-  for (int c = 0; c < 3; ++c) {
-    components_[c].ToFloatPixels(&yuv[c][0], 1);
-  }
-
-  yuv = PreProcessChannel(width_, height_, 2, 1.3f, 0.5f,
-                          cfg.u_sharpen, cfg.u_blur, yuv);
-  yuv = PreProcessChannel(width_, height_, 1, 1.3f, 0.5f,
-                          cfg.v_sharpen, cfg.v_blur, yuv);
-
-  // Do the actual downsampling (averaging) and forward-DCT.
-  if (cfg.u_factor_x != 1 || cfg.u_factor_y != 1) {
-    SetDownsampledCoefficients(yuv[1], cfg.u_factor_x, cfg.u_factor_y,
-                               &components_[1]);
-  }
-  if (cfg.v_factor_x != 1 || cfg.v_factor_y != 1) {
-    SetDownsampledCoefficients(yuv[2], cfg.v_factor_x, cfg.v_factor_y,
-                               &components_[2]);
-  }
-}
-
-void OutputImage::ApplyGlobalQuantization(const int q[3][kDCTBlockSize]) {
-  for (int c = 0; c < 3; ++c) {
-    components_[c].ApplyGlobalQuantization(&q[c][0]);
-  }
-}
 
 void OutputImage::SaveToJpegData(JPEGData* jpg) const {
   assert(components_[0].factor_x() == 1);
