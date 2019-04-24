@@ -19,7 +19,11 @@
 #include <algorithm>
 #include <string.h>
 
+#ifdef HLS
+#include "guetzli/hwdct.h"
+#else
 #include "guetzli/fdct.h"
+#endif
 
 namespace guetzli {
 
@@ -69,6 +73,9 @@ bool EncodeRGBToJpeg(const std::vector<uint8_t>& rgb, int w, int h,
       rgb.size() != 3 * w * h) {
     return false;
   }
+# ifdef HLS
+  InitHardware();
+# endif
   InitJPEGDataForYUV444(w, h, jpg);
   AddApp0Data(jpg);
 

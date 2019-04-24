@@ -16,7 +16,7 @@ ifeq ($(config),release)
   TARGET = $(TARGETDIR)/libguetzli_static.a
   OBJDIR = obj/Release/guetzli_static
   DEFINES +=
-  INCLUDES += -I.
+  INCLUDES += -I. -I./dct_hls/ps7_cortexa9_0/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O3 -g `pkg-config --static --cflags libpng || libpng-config --static --cflags`
@@ -43,7 +43,7 @@ ifeq ($(config),debug)
   TARGET = $(TARGETDIR)/libguetzli_static.a
   OBJDIR = obj/Debug/guetzli_static
   DEFINES +=
-  INCLUDES += -I.
+  INCLUDES += -I. -I./dct_hls/ps7_cortexa9_0/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g `pkg-config --static --cflags libpng || libpng-config --static --cflags`
@@ -70,6 +70,7 @@ OBJECTS := \
 	$(OBJDIR)/entropy_encode.o \
 	$(OBJDIR)/fdct.o \
 	$(OBJDIR)/gamma_correct.o \
+	$(OBJDIR)/hwdct.o \
 	$(OBJDIR)/idct.o \
 	$(OBJDIR)/jpeg_data.o \
 	$(OBJDIR)/jpeg_data_decoder.o \
@@ -151,6 +152,9 @@ $(OBJDIR)/fdct.o: guetzli/fdct.cc
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/gamma_correct.o: guetzli/gamma_correct.cc
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/hwdct.o: guetzli/hwdct.cc
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/idct.o: guetzli/idct.cc
