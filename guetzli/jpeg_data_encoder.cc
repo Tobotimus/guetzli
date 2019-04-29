@@ -17,13 +17,14 @@
 #include "guetzli/jpeg_data_encoder.h"
 
 #include <algorithm>
+#include <fcntl.h>
+#include <signal.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 
-#ifdef HLS
 #include "guetzli/hwdct.h"
-#else
 #include "guetzli/fdct.h"
-#endif
 
 namespace guetzli {
 
@@ -73,9 +74,6 @@ bool EncodeRGBToJpeg(const std::vector<uint8_t>& rgb, int w, int h,
       rgb.size() != 3 * w * h) {
     return false;
   }
-# ifdef HLS
-  InitHardware();
-# endif
   InitJPEGDataForYUV444(w, h, jpg);
   AddApp0Data(jpg);
 
@@ -89,36 +87,86 @@ bool EncodeRGBToJpeg(const std::vector<uint8_t>& rgb, int w, int h,
     }
   }
 
-  // Compute YUV444 DCT coefficients.
   int block_ix = 0;
-  for (int block_y = 0; block_y < jpg->MCU_rows; ++block_y) {
-    for (int block_x = 0; block_x < jpg->MCU_cols; ++block_x) {
-      coeff_t block[3 * kDCTBlockSize];
-      // RGB->YUV transform.
-      for (int iy = 0; iy < 8; ++iy) {
-        for (int ix = 0; ix < 8; ++ix) {
-          int y = std::min(h - 1, 8 * block_y + iy);
-          int x = std::min(w - 1, 8 * block_x + ix);
-          int p = y * w + x;
-          RGBToYUV16(&rgb[3 * p], &block[8 * iy + ix]);
-        }
-      }
-      // DCT
-      for (int i = 0; i < 3; ++i) {
-        ComputeBlockDCT(&block[i * kDCTBlockSize]);
-      }
-      // Quantization
-      for (int i = 0; i < 3 * 64; ++i) {
-        Quantize(&block[i], iquant[i]);
-      }
-      // Copy the resulting coefficients to *jpg.
-      for (int i = 0; i < 3; ++i) {
-        memcpy(&jpg->components[i].coeffs[block_ix * kDCTBlockSize],
-               &block[i * kDCTBlockSize], kDCTBlockSize * sizeof(block[0]));
-      }
-      ++block_ix;
-    }
+
+#ifdef HLS
+  int fdr = open("/dev/xillybus_read_32", O_RDONLY);
+  if (fdr < 0) {
+    fprintf(stderr, "Failed to open read bus: %s\n", strerror(errno));
+    exit(1);
   }
+  int fdw = open("/dev/xillybus_write_32", O_WRONLY);
+  if (fdw < 0) {
+    fprintf(stderr, "Failed to open write bus: %s\n", strerror(errno));
+    exit(1);
+  }
+
+  int pid = fork();
+  if (pid < 0) {
+    fprintf(stderr, "Failed to fork(): %s\n", strerror(errno));
+    exit(1);
+  }
+
+  if (!pid) {
+    // Child process does RGB->YUV and then writes to FIFO for DCT
+    close(fdr);
+#endif // HLS
+    for (int block_y = 0; block_y < jpg->MCU_rows; ++block_y) {
+      for (int block_x = 0; block_x < jpg->MCU_cols; ++block_x) {
+        coeff_t block[3 * kDCTBlockSize];
+        // RGB->YUV transform.
+        for (int iy = 0; iy < 8; ++iy) {
+          for (int ix = 0; ix < 8; ++ix) {
+            int y = std::min(h - 1, 8 * block_y + iy);
+            int x = std::min(w - 1, 8 * block_x + ix);
+            int p = y * w + x;
+            RGBToYUV16(&rgb[3 * p], &block[8 * iy + ix]);
+          }
+        }
+#ifdef HLS
+        // Send to FIFO for DCT
+        FifoWriteBlock(block, fdw);
+#else
+        for (int i = 0; i < 3; ++i) {
+          ComputeBlockDCT(&block[i * kDCTBlockSize]);
+        }
+#endif // HLS
+#ifdef HLS
+      }
+    }
+    // Sleep until we're terminated, or a minute at max
+    sleep(60);
+    close(fdw);
+    exit(0);
+  }
+  else
+  {
+    // Parent process reads DCT coeffs from FIFO and then does quantization
+    close(fdw);
+    for (int block_y = 0; block_y < jpg->MCU_rows; ++block_y) {
+      for (int block_x = 0; block_x < jpg->MCU_cols; ++block_x) {
+        coeff_t block[3 * kDCTBlockSize];
+        // Get DCT coeffs from FIFO
+        FifoReadBlock(block, fdr);
+#endif // HLS
+        // Quantization
+        for (int i = 0; i < 3 * 64; ++i) {
+          Quantize(&block[i], iquant[i]);
+        }
+        // Copy the resulting coefficients to *jpg.
+        for (int i = 0; i < 3; ++i) {
+          memcpy(&jpg->components[i].coeffs[block_ix * kDCTBlockSize],
+                &block[i * kDCTBlockSize], kDCTBlockSize * sizeof(block[0]));
+        }
+        ++block_ix;
+      }
+    }
+#ifdef HLS
+    // Terminate the child process
+    kill(pid, SIGTERM);
+    close(fdr);
+  }
+#endif // HLS
 
   return true;
 }

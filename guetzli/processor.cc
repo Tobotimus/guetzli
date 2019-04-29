@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <set>
 #include <string.h>
+#include <time.h>
 #include <vector>
 
 #include "guetzli/debug_print.h"
@@ -173,10 +174,15 @@ bool Process(const Params& params, ProcessStats* stats,
              const std::vector<uint8_t>& rgb, int w, int h,
              std::string* jpg_out) {
   JPEGData jpg;
+
+  clock_t start, end;
+  start = clock();
   if (!EncodeRGBToJpeg(rgb, w, h, &jpg)) {
     fprintf(stderr, "Could not create jpg data from rgb pixels\n");
     return false;
   }
+  end = clock();
+  printf("Took %f seconds to encode JPEG\n", ((double) (end - start)) / CLOCKS_PER_SEC);
   GuetzliOutput out;
   ProcessStats dummy_stats;
   if (stats == nullptr) {

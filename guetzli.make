@@ -8,6 +8,10 @@ ifndef verbose
   SILENT = @
 endif
 
+ifdef hls
+  DEFINES += -DHLS
+endif
+
 .PHONY: clean prebuild prelink
 
 ifeq ($(config),release)
@@ -16,15 +20,15 @@ ifeq ($(config),release)
   TARGET = $(TARGETDIR)/guetzli
   OBJDIR = obj/Release/guetzli
   DEFINES +=
-  INCLUDES += -I. -I./dct_hls/ps7_cortexa9_0/include
+  INCLUDES += -I.
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O3 -g `pkg-config --cflags libpng || libpng-config --cflags`
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O3 -g -std=c++11 `pkg-config --cflags libpng || libpng-config --cflags`
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O3 -g `pkg-config --cflags libpng12 || libpng12-config --cflags`
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O3 -g -std=c++11 `pkg-config --cflags libpng12 || libpng12-config --cflags`
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS +=
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS) `pkg-config --libs libpng || libpng-config --ldflags`
+  ALL_LDFLAGS += $(LDFLAGS) `pkg-config --libs libpng12 || libpng12-config --ldflags`
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef

@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef GUETZLI_FDCT_H_
-#define GUETZLI_FDCT_H_
+#ifndef GUETZLI_HWDCT_H_
+#define GUETZLI_HWDCT_H_
 
 #include "guetzli/jpeg_data.h"
 
 namespace guetzli {
 
-// Initializes IP cores
-void InitHardware();
-
-// Computes the DCT (Discrete Cosine Transform) of the 8x8 array in 'block',
-// scaled up by a factor of 16. The values in 'block' are laid out row-by-row
-// and the result is written to the same memory area.
-void ComputeBlockDCT(coeff_t* block);
+void FifoWriteBlock(coeff_t *block, int fdw);
+void FifoReadBlock(coeff_t *block, int fdr);
 
 }  // namespace guetzli
 
-#endif  // GUETZLI_FDCT_H_
+#endif  // GUETZLI_HWDCT_H_

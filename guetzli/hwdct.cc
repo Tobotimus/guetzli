@@ -18,93 +18,59 @@
 //
 // Note! DCT output is kept scaled by 16, to retain maximum 16bit precision
 
-#include "guetzli/fdct.h"
-#include "xdct.h"
-#include "xaxidma.h"
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include "guetzli/hwdct.h"
 
-XDct dct;
-XAxiDma axiDMA;
-XAxiDma_Config *axiDMA_cfg;
-#ifndef __linux__
-XDct_Config *dct_cfg;
-#endif
-
-#define MEM_BASE_ADDR  0x01000000
-#define TX_BUFFER_BASE (MEM_BASE_ADDR + 0x00100000)
-#define RX_BUFFER_BASE (MEM_BASE_ADDR + 0x00300000)
-
-// Pointers to DMA TX/RX addresses
-UINTPTR m_dma_buffer_TX = TX_BUFFER_BASE;
-UINTPTR m_dma_buffer_RX = RX_BUFFER_BASE;
-
-typedef union {
-    uint32_t asInt;
-    float asFloat;
-} floatConverter;
 
 namespace guetzli {
 
-int32_t inStreamData[kDCTBlockSize];
+void FifoWriteBlock(coeff_t *buf, int fd) {
+    // static int numWrites = 0;
+    int donebytes, rc;
 
-void InitHardware() {
-    printf("Initializing Dct\n");
-#   ifndef __linux__
-    dct_cfg = XDct_LookupConfig(XPAR_DCT_0_DEVICE_ID);
-    if (dct_cfg) {
-        int status = XDct_CfgInitialize(&dct, dct_cfg);
-        if (status != XST_SUCCESS) {
-            fprintf(stderr, "Error initializing Dct core\n");
-        }
-    }
-#   else
-    int status = XDct_Initialize(&dct, "dct_0");
-    if (status != XST_SUCCESS) {
-        fprintf(stderr, "Error initializing Dct core\n");
-    }
-#   endif
+    donebytes = 0;
+    while (donebytes < sizeof(coeff_t) * 3 * kDCTBlockSize) {
+        rc = write(fd, buf + donebytes, sizeof(coeff_t) * (3 * kDCTBlockSize) - donebytes);
 
-    printf("Initializing AxiDMA\n");
-    axiDMA_cfg = XAxiDma_LookupConfig(XPAR_AXIDMA_0_DEVICE_ID);
-    if (axiDMA_cfg) {
-        int status = XAxiDma_CfgInitialize(&axiDMA, axiDMA_cfg);
-        if (status != XST_SUCCESS)
-        {
-            fprintf(stderr, "Error initializing AxiDMA core\n");
+        if ((rc < 0) && (errno == EINTR))
+            continue;
+
+
+        if (rc < 0) {
+            fprintf(stderr, "write() to xillybus failed: %s\n", strerror(errno));
+            exit(1);
         }
+
+        donebytes += rc;
     }
-    // Disable interrupts
-    XAxiDma_IntrDisable(&axiDMA, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
-    XAxiDma_IntrDisable(&axiDMA, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
 }
 
+void FifoReadBlock(coeff_t *buf, int fd) {
+    // static int numReads = 0;
+    int donebytes, rc;
 
-void ComputeBlockDCT(coeff_t* coeffs) {
-    XDct_Start(&dct);
+    donebytes = 0;
+    while (donebytes < sizeof(coeff_t) * 3 * kDCTBlockSize) {
+        rc = read(fd, buf + donebytes, sizeof(coeff_t) * (3 * kDCTBlockSize) - donebytes);
 
-    for (int i = 0; i < kDCTBlockSize; i++) {
-        inStreamData[i] = (int)coeffs[i];
+        if ((rc < 0) && (errno == EINTR))
+            continue;
+
+        if (rc < 0) {
+            fprintf(stderr, "read() from xillybus failed: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        if (rc == 0) {
+            fprintf(stderr, "Reached read EOF!? Should never happen.\n");
+            continue;
+        }
+
+        donebytes += rc;
     }
-
-    // Flush the cache of the buffers
-    Xil_DCacheFlushRange((uint32_t)inStreamData, kDCTBlockSize*sizeof(int32_t));
-    Xil_DCacheFlushRange(m_dma_buffer_RX, kDCTBlockSize*sizeof(uint32_t));
-
-    XAxiDma_SimpleTransfer(&axiDMA, (uint32_t)inStreamData, kDCTBlockSize*sizeof(int32_t), XAXIDMA_DMA_TO_DEVICE);
-
-    XAxiDma_SimpleTransfer(&axiDMA, m_dma_buffer_RX, kDCTBlockSize*sizeof(uint32_t), XAXIDMA_DEVICE_TO_DMA);
-    while (XAxiDma_Busy(&axiDMA, XAXIDMA_DEVICE_TO_DMA));
-
-    // Invalidate the cache to avoid reading garbage
-    Xil_DCacheInvalidateRange(m_dma_buffer_RX, kDCTBlockSize*sizeof(uint32_t));
-
-    while (!XDct_IsDone(&dct));
-
-    for (int i = 0; i < kDCTBlockSize; i++) {
-        floatConverter val;
-        val.asInt = reinterpret_cast<uint32_t *>(m_dma_buffer_RX)[i];
-        coeffs[i] = (coeff_t)val.asFloat;
-    }
-
 }
 
 }  // namespace guetzli
