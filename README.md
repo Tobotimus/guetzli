@@ -5,7 +5,7 @@ This is a fork of [Google's *Guetzli* JPEG encoder](https://github.com/google/gu
 
 # Building
 
-**IMPORTANT**: To build for usage with a hardware accelerator via Xillybus, ensure the `HLS` C Macro is defined when compiling. If using Unix makefiles, this can be done by simply setting the `hls` environment variable.
+**IMPORTANT**: To build for usage with a hardware accelerator via Xillybus, ensure the `HLS` C Macro is defined when compiling. If using Unix makefiles, this can be done by simply setting the `hls` environment variable. This fork has been developed and tested on Linux.
 
 ## On POSIX systems
 
@@ -55,11 +55,6 @@ To install using the repository:
 4.  Run the following command to build the binary in `bin/Release/guetzli`.
     *   If you installed using [Homebrew](https://brew.sh/) simply use `make`
     *   If you installed using [MacPorts](https://www.macports.org/) use `CFLAGS='-I/opt/local/include' LDFLAGS='-L/opt/local/lib' make`
-
-## With Bazel
-
-There's also a [Bazel](https://bazel.build) build configuration provided. If you
-have Bazel installed, you can also compile Guetzli by running `bazel build -c opt //:guetzli`.
 
 # Using
 
