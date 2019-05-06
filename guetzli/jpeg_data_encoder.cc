@@ -135,7 +135,6 @@ bool EncodeRGBToJpeg(const std::vector<uint8_t>& rgb, int w, int h,
       }
     }
     // Sleep until we're terminated, or a minute at max
-    sleep(60);
     close(fdw);
     exit(0);
   }
@@ -162,8 +161,6 @@ bool EncodeRGBToJpeg(const std::vector<uint8_t>& rgb, int w, int h,
       }
     }
 #ifdef HLS
-    // Terminate the child process
-    kill(pid, SIGTERM);
     close(fdr);
   }
 #endif // HLS

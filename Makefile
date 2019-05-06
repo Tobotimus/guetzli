@@ -17,6 +17,8 @@ ifeq ($(config),debug)
   guetzli_config = debug
 endif
 
+
+
 PROJECTS := guetzli_static guetzli
 
 .PHONY: all clean help $(PROJECTS) 
