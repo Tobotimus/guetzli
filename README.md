@@ -58,18 +58,8 @@ To install using the repository:
 
 # Using
 
-To try out Guetzli you need to [build](#building) or
-[download](https://github.com/google/guetzli/releases) the Guetzli binary. The
-binary reads a PNG or JPEG image and creates an optimized JPEG image:
+After compiling, you will find the `guetzli` executable in the `bin/Release` or `bin/Debug` subdirectory (depending on the build configuration). Then, on POSIX systems, usage is as follows:
 
 ```bash
-guetzli original.png output.jpg
-guetzli original.jpg output.jpg
+./guetzli original.png output.jpg
 ```
-
-Note that Guetzli is designed to work on high quality images. You should always
-prefer providing uncompressed input images (e.g. that haven't been already
-compressed with any JPEG encoders, including Guetzli). While it will work on other
-images too, results will be poorer. You can try compressing an enclosed [sample
-high quality
-image](https://github.com/google/guetzli/releases/download/v0/bees.png).
