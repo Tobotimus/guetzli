@@ -17,7 +17,7 @@ This is a fork of [Google's *Guetzli* JPEG encoder](https://github.com/google/gu
     If using your operating system
     package manager, install development versions of the packages if the
     distinction exists.
-    *   On Ubuntu, do `apt-get install libpng-dev`.
+    *   On Ubuntu (and Xillinux), do `apt-get install libpng-dev`.
     *   On Fedora, do `dnf install libpng-devel`. 
     *   On Arch Linux, do `pacman -S libpng`.
     *   On Alpine Linux, do `apk add libpng-dev`.
